@@ -6,14 +6,7 @@ import uvicorn
 import sys
 import os
 
-def main():
-    print("🚀 Starting Parallel ChatGPT Scraping Server")
-    print("=" * 50)
-    print("Server will handle multiple requests in parallel")
-    print("Each request will open a separate Chrome browser instance")
-    print("Maximum concurrent workers: 10")
-    print("=" * 50)
-    
+def main():    
     # Add current directory to Python path
     current_dir = os.path.dirname(os.path.abspath(__file__))
     if current_dir not in sys.path:
