@@ -39,7 +39,7 @@ def get_chatgpt_response(question):
     Optimized function to get ChatGPT response for parallel execution
     """
     thread_id = threading.get_ident()
-    print(f"prompt received: {question}")
+    print("✅ Prompt received")
     
     driver = None
     try:
@@ -48,7 +48,7 @@ def get_chatgpt_response(question):
         driver.set_page_load_timeout(30)  # Increased timeout for parallel loads
         
         # Open ChatGPT
-        print("browser opened")
+        print("✅ Browser opened")
         driver.get("https://chatgpt.com")
         
         # Randomized wait to prevent simultaneous requests
@@ -67,11 +67,12 @@ def get_chatgpt_response(question):
         fast_paste_typing(input_element, question)
         time.sleep(1)
         input_element.send_keys(Keys.RETURN)
-        print("prompt input successfully")
+        print("✅ Prompt input successfully")
         
         # Wait for response
         response = wait_for_response_complete(driver, thread_id)
-        print(f"response received: {response[:10]}")
+        print(f"✅ Response received: {response[:10]}")
+        print("✅ Response sent to API")
         return response
         
     except Exception as e:
@@ -82,7 +83,7 @@ def get_chatgpt_response(question):
         if driver:
             try:
                 driver.quit()
-                print("browser closed")
+                print("✅ Browser closed")
             except Exception as e:
                 logger.warning(f"⚠️ Thread {thread_id}: Browser cleanup warning: {e}")
         
@@ -102,29 +103,23 @@ def find_input_element(driver, thread_id):
     max_attempts = 3
     for attempt in range(max_attempts):
         try:
-            logger.info(f"� Thread {thread_id}: Looking for input element (attempt {attempt + 1}/{max_attempts})...")
-            
             for selector in input_selectors:
                 try:
                     elements = driver.find_elements(By.CSS_SELECTOR, selector)
                     for element in elements:
                         if element.is_displayed() and element.is_enabled():
-                            logger.info(f"✓ Thread {thread_id}: Found input with selector: {selector}")
                             return element
                 except Exception as e:
-                    logger.debug(f"Thread {thread_id}: Selector {selector} failed: {e}")
                     continue
             
             # If no element found, wait and try again
             if attempt < max_attempts - 1:
                 wait_time = 3 + attempt * 2
-                logger.info(f"⏳ Thread {thread_id}: No input found, waiting {wait_time}s before retry...")
                 time.sleep(wait_time)
                 
         except Exception as e:
-            logger.error(f"❌ Thread {thread_id}: Error finding input element: {e}")
+            pass
     
-    logger.error(f"❌ Thread {thread_id}: Could not find input element after {max_attempts} attempts")
     return None
 
 def setup_undetected_browser_parallel():
@@ -367,7 +362,7 @@ def automated_chatgpt_query(iteration):
         # Set faster page load timeout
         driver.set_page_load_timeout(15)
         
-        print("browser opened")
+        print("✅ Browser opened")
         driver.get("https://chatgpt.com")
         
         # Minimal initial wait
@@ -421,7 +416,7 @@ def automated_chatgpt_query(iteration):
         
         # Fast text input using clipboard paste
         question = "what is best laptop to buy in 2024"
-        print(f"prompt received: {question}")
+        print("✅ Prompt received")
         fast_paste_typing(input_element, question)
         
         # Minimal thinking pause
@@ -430,21 +425,21 @@ def automated_chatgpt_query(iteration):
         
         # Send message
         input_element.send_keys(Keys.RETURN)
-        print("prompt input successfully")
+        print("✅ Prompt input successfully")
         
         # Fast response waiting
         response_text = wait_for_response_complete(driver, threading.get_ident())
         
         # Display results
         if response_text and len(response_text) > 30 and "blocked" not in response_text.lower():
-            print(f"response received: {response_text[:10]}")
+            print(f"✅ Response received: {response_text[:10]}")
             try:
                 pyperclip.copy(response_text)
-                print("response passed to api")
+                print("✅ Response sent to API")
             except:
                 pass
         else:
-            print(f"response received: {response_text[:10]}")
+            print(f"✅ Response received: {response_text[:10]}")
         
     except Exception as e:
         pass
@@ -453,7 +448,7 @@ def automated_chatgpt_query(iteration):
         if driver:
             try:
                 driver.quit()
-                print("browser closed")
+                print("✅ Browser closed")
             except:
                 pass
 
