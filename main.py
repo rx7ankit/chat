@@ -4,6 +4,10 @@ from script import get_chatgpt_response
 
 app = FastAPI()
 
+@app.get("/")
+async def root():
+    return {"message": "FastAPI server is running!"}
+
 class ChatRequest(BaseModel):
     message: str
 
