@@ -190,14 +190,18 @@ def setup_undetected_browser_parallel():
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
             ]
             
-            # Add randomized viewport size to differentiate browser instances
-            width = random.randint(1200, 1920)
-            height = random.randint(800, 1080)
+            # Add smaller randomized viewport size to differentiate browser instances
+            width = random.randint(800, 1200)  # Smaller width range
+            height = random.randint(600, 800)   # Smaller height range
             options.add_argument(f"--window-size={width},{height}")
             
+            # Additional options to ensure smaller window
+            options.add_argument("--start-maximized=false")
+            options.add_argument("--disable-fullscreen")
+            
             # Randomized window position to prevent overlap
-            x_pos = random.randint(0, 200)
-            y_pos = random.randint(0, 200)
+            x_pos = random.randint(0, 400)  # Increased position range since windows are smaller
+            y_pos = random.randint(0, 300)
             options.add_argument(f"--window-position={x_pos},{y_pos}")
             
             # Small delay to prevent simultaneous startup
@@ -212,6 +216,10 @@ def setup_undetected_browser_parallel():
                 suppress_welcome=True,
                 use_subprocess=False  # Important for parallel execution
             )
+            
+            # Force set window size after creation (this ensures it works)
+            driver.set_window_size(width, height)
+            driver.set_window_position(x_pos, y_pos)
             
             # Set random user agent
             selected_ua = random.choice(user_agents)
