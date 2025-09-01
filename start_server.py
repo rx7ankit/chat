@@ -26,7 +26,8 @@ def main():
         port=8000,
         reload=True,
         workers=1,  # Keep as 1 since we handle parallelism within the app
-        log_level="info"
+        log_level="warning",  # Reduced logging to only show warnings/errors
+        access_log=False  # Disable access logs for cleaner output
     )
 
 if __name__ == "__main__":

@@ -14,8 +14,14 @@ import os
 import uuid
 from pathlib import Path
 
-# Set up logging
+# Set up logging - suppress unnecessary logs
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.ERROR)  # Only show errors
+
+# Suppress noisy loggers
+logging.getLogger("undetected_chromedriver").setLevel(logging.ERROR)
+logging.getLogger("selenium").setLevel(logging.ERROR)
+logging.getLogger("urllib3").setLevel(logging.ERROR)
 
 # Thread-local storage for better parallel execution
 thread_local = threading.local()
