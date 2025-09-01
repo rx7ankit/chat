@@ -77,8 +77,7 @@ def get_chatgpt_response(question):
         
         # Wait for response
         response = wait_for_response_complete(driver, thread_id)
-        print(f"✅ Response received: {response[:10]}")
-        print("✅ Response sent to API")
+        print("✅ Response sent to API successfully")
         return response
         
     except Exception as e:
