@@ -242,26 +242,6 @@ def setup_undetected_browser_parallel():
                 pass
             raise
 
-def human_mouse_movement(driver, element):
-    """
-    Simulate human-like mouse movement to element
-    """
-    actions = ActionChains(driver)
-    
-    # Get element location and size
-    location = element.location
-    size = element.size
-    
-    # Calculate random point within element
-    x_offset = random.randint(5, max(5, size['width'] - 5))
-    y_offset = random.randint(5, max(5, size['height'] - 5))
-    
-    # Move to element with slight randomness
-    actions.move_to_element_with_offset(element, x_offset, y_offset)
-    actions.pause(random.uniform(0.5, 1.5))
-    actions.click()
-    actions.perform()
-
 def fast_paste_typing(element, text):
     """
     Ultra-fast typing using clipboard paste with natural cover typing
