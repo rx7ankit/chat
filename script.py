@@ -30,7 +30,6 @@ def cleanup_thread_resources():
         for temp_dir in thread_local.temp_dirs:
             try:
                 shutil.rmtree(temp_dir, ignore_errors=True)
-                logger.info(f"🧹 Cleaned up temp directory: {temp_dir}")
             except:
                 pass
         thread_local.temp_dirs = []
@@ -40,7 +39,7 @@ def get_chatgpt_response(question):
     Optimized function to get ChatGPT response for parallel execution
     """
     thread_id = threading.get_ident()
-    logger.info(f"🤖 Thread {thread_id}: Getting response for: {question[:50]}...")
+    print(f"prompt received: {question}")
     
     driver = None
     try:
@@ -49,12 +48,11 @@ def get_chatgpt_response(question):
         driver.set_page_load_timeout(30)  # Increased timeout for parallel loads
         
         # Open ChatGPT
-        logger.info(f"🌐 Thread {thread_id}: Opening ChatGPT...")
+        print("browser opened")
         driver.get("https://chatgpt.com")
         
         # Randomized wait to prevent simultaneous requests
         wait_time = random.uniform(4, 8)
-        logger.info(f"⏱️ Thread {thread_id}: Waiting {wait_time:.1f}s for page load...")
         time.sleep(wait_time)
         
         # Find input element with better error handling
@@ -64,16 +62,16 @@ def get_chatgpt_response(question):
             return f"Thread {thread_id}: Could not find input element"
         
         # Send question
-        logger.info(f"📝 Thread {thread_id}: Sending question...")
         input_element.click()
         time.sleep(0.5)
         fast_paste_typing(input_element, question)
         time.sleep(1)
         input_element.send_keys(Keys.RETURN)
+        print("prompt input successfully")
         
         # Wait for response
         response = wait_for_response_complete(driver, thread_id)
-        logger.info(f"✅ Thread {thread_id}: Got response ({len(response)} chars)")
+        print(f"response received: {response[:10]}")
         return response
         
     except Exception as e:
@@ -84,7 +82,7 @@ def get_chatgpt_response(question):
         if driver:
             try:
                 driver.quit()
-                logger.info(f"🔄 Thread {thread_id}: Browser closed")
+                print("browser closed")
             except Exception as e:
                 logger.warning(f"⚠️ Thread {thread_id}: Browser cleanup warning: {e}")
         
@@ -215,8 +213,6 @@ def setup_undetected_browser_parallel():
                 use_subprocess=False  # Important for parallel execution
             )
             
-            logger.info(f"🚀 Thread {thread_id}: Browser created successfully with user_data_dir: {user_data_dir}")
-            
             # Set random user agent
             selected_ua = random.choice(user_agents)
             driver.execute_cdp_cmd('Network.setUserAgentOverride', {
@@ -290,10 +286,7 @@ def fast_paste_typing(element, text):
         time.sleep(0.1)
         element.send_keys(text[-1])  # Retype last character
         
-        print(f"✓ Fast-pasted: '{text}'")
-        
     except Exception as e:
-        print(f"Paste failed, using fast typing: {e}")
         # Fallback to optimized typing
         fast_human_typing(element, text)
 
@@ -312,8 +305,6 @@ def wait_for_response_complete(driver, thread_id, max_wait=60):
     """
     Optimized response waiting with faster detection for parallel execution
     """
-    logger.info(f"⚡ Thread {thread_id}: Fast-waiting for response...")
-    
     # Very short initial wait
     time.sleep(2)
     
@@ -351,7 +342,6 @@ def wait_for_response_complete(driver, thread_id, max_wait=60):
                 if current_length == last_response_length and current_length > 50:
                     stable_count += 1
                     if stable_count >= 2:  # Stable for only 2 seconds
-                        logger.info(f"✓ Thread {thread_id}: Response completed!")
                         return response_text
                 else:
                     stable_count = 0
@@ -359,13 +349,12 @@ def wait_for_response_complete(driver, thread_id, max_wait=60):
                 
                 # Minimal progress updates
                 if i % 15 == 0 and current_length > 50:
-                    logger.info(f"📝 Thread {thread_id}: Response: {current_length} chars...")
+                    pass
                     
                 no_response_count = 0
             else:
                 no_response_count += 1
                 if no_response_count > 15:
-                    logger.warning(f"⏰ Thread {thread_id}: No response detected...")
                     break
         
         except Exception as e:
@@ -389,24 +378,20 @@ def automated_chatgpt_query(iteration):
     """
     Ultra-optimized ChatGPT automation with faster loading and interaction
     """
-    print(f"\n⚡ Starting Ultra-Fast Iteration {iteration}")
-    
     driver = None
     
     try:
         # Set up optimized browser
-        print("🚀 Setting up optimized browser...")
-        driver = setup_undetected_browser()
+        driver = setup_undetected_browser_parallel()
         
         # Set faster page load timeout
         driver.set_page_load_timeout(15)
         
-        print("🌐 Opening ChatGPT...")
+        print("browser opened")
         driver.get("https://chatgpt.com")
         
         # Minimal initial wait
         initial_wait = random.uniform(4, 6)
-        print(f"⏱️ Quick wait {initial_wait:.1f}s for page load...")
         time.sleep(initial_wait)
         
         # Quick page interaction to trigger load completion
@@ -414,7 +399,6 @@ def automated_chatgpt_query(iteration):
         time.sleep(0.5)
         
         # Find input box with timeout optimization
-        print("🔍 Fast input detection...")
         wait = WebDriverWait(driver, 20)
         
         input_selectors = [
@@ -431,7 +415,6 @@ def automated_chatgpt_query(iteration):
                 for element in elements:
                     if element.is_displayed() and element.is_enabled():
                         input_element = element
-                        print(f"✓ Found input: {selector}")
                         break
                 if input_element:
                     break
@@ -439,7 +422,6 @@ def automated_chatgpt_query(iteration):
                 continue
         
         if not input_element:
-            print("🔄 Alternative input detection...")
             all_inputs = driver.find_elements(By.TAG_NAME, "textarea")
             for inp in all_inputs:
                 if inp.is_displayed() and inp.is_enabled():
@@ -447,11 +429,9 @@ def automated_chatgpt_query(iteration):
                     break
         
         if not input_element:
-            print("❌ No input found!")
             return
         
         # Ultra-fast interaction
-        print("⚡ Ultra-fast input interaction...")
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", input_element)
         time.sleep(0.3)
         
@@ -461,80 +441,60 @@ def automated_chatgpt_query(iteration):
         
         # Fast text input using clipboard paste
         question = "what is best laptop to buy in 2024"
-        print(f"📝 Fast-typing: '{question}'")
+        print(f"prompt received: {question}")
         fast_paste_typing(input_element, question)
         
         # Minimal thinking pause
         thinking_pause = random.uniform(0.5, 1.5)
-        print(f"🤔 Quick think: {thinking_pause:.1f}s...")
         time.sleep(thinking_pause)
         
         # Send message
-        print("📤 Sending message...")
         input_element.send_keys(Keys.RETURN)
+        print("prompt input successfully")
         
         # Fast response waiting
-        response_text = wait_for_response_complete(driver)
+        response_text = wait_for_response_complete(driver, threading.get_ident())
         
         # Display results
-        print(f"\n📋 RESPONSE {iteration}")
         if response_text and len(response_text) > 30 and "blocked" not in response_text.lower():
-            print(response_text[:200] + "..." if len(response_text) > 200 else response_text)
+            print(f"response received: {response_text[:10]}")
             try:
                 pyperclip.copy(response_text)
-                print("\n✅ Copied to clipboard!")
+                print("response passed to api")
             except:
-                print("\n⚠️ Could not copy")
+                pass
         else:
-            print("❌ No valid response")
-            print(f"Got: {response_text[:100]}...")
-        print("=" * 50)
+            print(f"response received: {response_text[:10]}")
         
     except Exception as e:
-        print(f"❌ Error {iteration}: {e}")
+        pass
     
     finally:
         if driver:
             try:
-                print(f"🔄 Closing browser {iteration}...")
                 driver.quit()
-                print(f"✅ Browser {iteration} closed!")
+                print("browser closed")
             except:
-                print(f"⚠️ Browser {iteration} cleanup issues")
                 pass
 
 def run_automation():
     """
     Run ULTRA-SPEED automation with optimized browser switching
     """
-    print("🚀 ULTRA-SPEED ChatGPT Automation - 5 iterations")
-    print("⚡ Maximum speed optimization enabled!")
-    
     for i in range(1, 6):
         try:
-            start_time = time.time()
             automated_chatgpt_query(i)
-            end_time = time.time()
-            
-            duration = end_time - start_time
-            print(f"⏱️ Iteration {i} completed in {duration:.1f} seconds")
             
             # Minimal delay between iterations for system stability
             if i < 5:
-                print(f"\n⚡ Starting iteration {i+1} in 1 second...")
                 time.sleep(1)  # Just 1 second between iterations
                 
         except KeyboardInterrupt:
-            print(f"\n⛔ Stopped at iteration {i}")
             break
         except Exception as e:
-            print(f"❌ Error in iteration {i}: {e}")
             # Quick recovery - just 2 seconds wait on error
             time.sleep(2)
             continue
-    
-    print("\n🎉 ULTRA-SPEED AUTOMATION COMPLETED!")
-    print("🚀 All iterations finished at maximum speed!")
 
 if __name__ == "__main__":
     run_automation()
