@@ -10,17 +10,39 @@ import random
 
 def setup_undetected_browser():
     """
-    Set up undetected Chrome browser
+    Set up optimized undetected Chrome browser
     """
     options = uc.ChromeOptions()
     
-    # Basic settings
+    # Performance optimizations
     options.add_argument("--no-first-run")
     options.add_argument("--no-service-autorun")
     options.add_argument("--no-default-browser-check")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--disable-extensions")
+    options.add_argument("--disable-plugins")
+    options.add_argument("--disable-images")  # Skip loading images for faster page load
+    options.add_argument("--disable-javascript-harmony-shipping")
+    options.add_argument("--disable-background-timer-throttling")
+    options.add_argument("--disable-renderer-backgrounding")
+    options.add_argument("--disable-backgrounding-occluded-windows")
+    options.add_argument("--disable-client-side-phishing-detection")
+    options.add_argument("--disable-sync")
+    options.add_argument("--metrics-recording-only")
+    options.add_argument("--no-report-upload")
+    options.add_argument("--disable-default-apps")
+    
+    # Network optimizations
+    options.add_argument("--aggressive-cache-discard")
+    options.add_argument("--memory-pressure-off")
     
     # Create undetected Chrome instance
     driver = uc.Chrome(options=options, version_main=None)
+    
+    # Set faster page load strategy
+    driver.execute_cdp_cmd('Network.setUserAgentOverride', {
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    })
     
     # Additional stealth measures
     driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
@@ -49,87 +71,106 @@ def human_mouse_movement(driver, element):
     actions.click()
     actions.perform()
 
-def human_like_typing(element, text):
+def fast_paste_typing(element, text):
     """
-    Type text with optimized human-like patterns (faster)
+    Ultra-fast typing using clipboard paste with natural cover typing
     """
-    # Type words with slight delays instead of character by character
-    words = text.split(' ')
-    
-    for i, word in enumerate(words):
-        # Type word faster but still natural
-        for char in word:
-            element.send_keys(char)
-            # Faster typing with smaller delays
-            if char in 'aeiou':  # Vowels typed faster
-                time.sleep(random.uniform(0.03, 0.08))
-            else:
-                time.sleep(random.uniform(0.05, 0.12))
+    try:
+        # Copy text to clipboard
+        pyperclip.copy(text)
+        time.sleep(0.1)
         
-        # Add space after word (except last word)
-        if i < len(words) - 1:
-            element.send_keys(' ')
-            time.sleep(random.uniform(0.1, 0.3))  # Shorter pause between words
+        # Clear the input first
+        element.clear()
+        time.sleep(0.1)
         
-        # Reduced thinking pauses
-        if random.random() < 0.15:  # 15% chance instead of 25%
-            time.sleep(random.uniform(0.3, 1.0))
+        # Paste the text instantly
+        element.send_keys(Keys.CONTROL + 'v')
+        time.sleep(0.2)
+        
+        # Add a few natural keystrokes to mask the paste
+        element.send_keys(Keys.END)
+        time.sleep(0.1)
+        element.send_keys(Keys.BACKSPACE)
+        time.sleep(0.1)
+        element.send_keys(text[-1])  # Retype last character
+        
+        print(f"✓ Fast-pasted: '{text}'")
+        
+    except Exception as e:
+        print(f"Paste failed, using fast typing: {e}")
+        # Fallback to optimized typing
+        fast_human_typing(element, text)
 
-def wait_for_response_complete(driver, max_wait=80):
+def fast_human_typing(element, text):
     """
-    Wait until ChatGPT finishes generating the response (optimized)
+    Optimized human-like typing (fallback method)
     """
-    print("Waiting for response...")
+    # Type in chunks for speed
+    chunk_size = 5
+    for i in range(0, len(text), chunk_size):
+        chunk = text[i:i+chunk_size]
+        element.send_keys(chunk)
+        time.sleep(random.uniform(0.05, 0.15))  # Very fast between chunks
+
+def wait_for_response_complete(driver, max_wait=60):
+    """
+    Optimized response waiting with faster detection
+    """
+    print("⚡ Fast-waiting for response...")
     
-    # Shorter initial wait
-    time.sleep(5)
+    # Very short initial wait
+    time.sleep(2)
     
     last_response_length = 0
     stable_count = 0
     no_response_count = 0
     
+    # Cached selectors for faster lookup
+    response_selectors = [
+        'div[data-message-author-role="assistant"]',
+        'div[data-message-role="assistant"]', 
+        '.prose',
+        'div[data-testid="conversation-turn-2"]'
+    ]
+    
     for i in range(max_wait):
         try:
-            # Streamlined response detection
-            response_selectors = [
-                'div[data-message-author-role="assistant"]',
-                'div[data-message-role="assistant"]',
-                '.prose'
-            ]
-            
             response_text = ""
+            
+            # Fast element detection with cached selectors
             for selector in response_selectors:
                 try:
                     elements = driver.find_elements(By.CSS_SELECTOR, selector)
                     if elements:
                         response_text = elements[-1].text.strip()
-                        if response_text and "Something went wrong" not in response_text and len(response_text) > 20:
+                        if response_text and len(response_text) > 10:
                             break
                 except:
                     continue
             
-            if response_text and "Something went wrong" not in response_text and len(response_text) > 20:
+            if response_text and len(response_text) > 20:
                 current_length = len(response_text)
                 
-                # Faster stability check - only 3 seconds
-                if current_length == last_response_length and current_length > 80:
+                # Ultra-fast stability check - just 2 seconds
+                if current_length == last_response_length and current_length > 50:
                     stable_count += 1
-                    if stable_count >= 3:  # Stable for only 3 seconds
-                        print("Response completed!")
+                    if stable_count >= 2:  # Stable for only 2 seconds
+                        print("✓ Response completed!")
                         return response_text
                 else:
                     stable_count = 0
                     last_response_length = current_length
                 
-                # Less frequent progress updates
-                if i % 10 == 0 and current_length > 100:
-                    print(f"Response: {current_length} chars...")
+                # Minimal progress updates
+                if i % 15 == 0 and current_length > 50:
+                    print(f"📝 Response: {current_length} chars...")
                     
                 no_response_count = 0
             else:
                 no_response_count += 1
-                if no_response_count > 20:
-                    print("No response detected...")
+                if no_response_count > 15:
+                    print("⏰ No response detected...")
                     break
         
         except Exception as e:
@@ -142,7 +183,7 @@ def wait_for_response_complete(driver, max_wait=80):
         elements = driver.find_elements(By.CSS_SELECTOR, 'div[data-message-author-role="assistant"]')
         if elements:
             final_response = elements[-1].text.strip()
-            if final_response and "Something went wrong" not in final_response:
+            if final_response and len(final_response) > 10:
                 return final_response
     except:
         pass
@@ -151,38 +192,40 @@ def wait_for_response_complete(driver, max_wait=80):
 
 def automated_chatgpt_query(iteration):
     """
-    Optimized anti-detection ChatGPT automation
+    Ultra-optimized ChatGPT automation with faster loading and interaction
     """
-    print(f"\n=== Starting Iteration {iteration} ===")
+    print(f"\n⚡ Starting Ultra-Fast Iteration {iteration}")
     
     driver = None
     
     try:
-        # Set up undetected browser
-        print("Setting up browser...")
+        # Set up optimized browser
+        print("🚀 Setting up optimized browser...")
         driver = setup_undetected_browser()
         
-        print("Opening ChatGPT...")
+        # Set faster page load timeout
+        driver.set_page_load_timeout(15)
+        
+        print("🌐 Opening ChatGPT...")
         driver.get("https://chatgpt.com")
         
-        # Reduced initial wait but still safe
-        initial_wait = random.uniform(8, 12)
-        print(f"Waiting {initial_wait:.1f} seconds for page load...")
+        # Minimal initial wait
+        initial_wait = random.uniform(4, 6)
+        print(f"⏱️ Quick wait {initial_wait:.1f}s for page load...")
         time.sleep(initial_wait)
         
-        # Quick page interaction
-        driver.execute_script("window.scrollTo(0, 100);")
-        time.sleep(1)
-        driver.execute_script("window.scrollTo(0, 0);")
-        time.sleep(1)
+        # Quick page interaction to trigger load completion
+        driver.execute_script("window.scrollTo(0, 50);")
+        time.sleep(0.5)
         
-        # Find input box faster
-        print("Finding input box...")
-        wait = WebDriverWait(driver, 30)
+        # Find input box with timeout optimization
+        print("🔍 Fast input detection...")
+        wait = WebDriverWait(driver, 20)
         
         input_selectors = [
             'textarea[data-testid="prompt-textarea"]',
             'div[contenteditable="true"]',
+            'textarea[placeholder*="Message"]',
             'textarea'
         ]
         
@@ -190,19 +233,18 @@ def automated_chatgpt_query(iteration):
         for selector in input_selectors:
             try:
                 elements = driver.find_elements(By.CSS_SELECTOR, selector)
-                if elements:
-                    for element in elements:
-                        if element.is_displayed() and element.is_enabled():
-                            input_element = element
-                            print(f"Found input: {selector}")
-                            break
+                for element in elements:
+                    if element.is_displayed() and element.is_enabled():
+                        input_element = element
+                        print(f"✓ Found input: {selector}")
+                        break
                 if input_element:
                     break
             except:
                 continue
         
         if not input_element:
-            print("Trying alternative input detection...")
+            print("🔄 Alternative input detection...")
             all_inputs = driver.find_elements(By.TAG_NAME, "textarea")
             for inp in all_inputs:
                 if inp.is_displayed() and inp.is_enabled():
@@ -210,97 +252,94 @@ def automated_chatgpt_query(iteration):
                     break
         
         if not input_element:
-            print("No input found!")
+            print("❌ No input found!")
             return
         
-        # Faster interaction
-        print("Interacting with input...")
+        # Ultra-fast interaction
+        print("⚡ Ultra-fast input interaction...")
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", input_element)
-        time.sleep(1)
+        time.sleep(0.3)
         
-        # Quick click
+        # Quick click and focus
         input_element.click()
-        time.sleep(0.5)
-        
-        # Clear and type faster
-        input_element.clear()
         time.sleep(0.2)
         
-        # Faster typing
-        question = "what is best laptop to buy"
-        print(f"Typing: '{question}'")
-        human_like_typing(input_element, question)
+        # Fast text input using clipboard paste
+        question = "what is best laptop to buy in 2024"
+        print(f"📝 Fast-typing: '{question}'")
+        fast_paste_typing(input_element, question)
         
-        # Shorter thinking pause
-        thinking_pause = random.uniform(1, 3)
-        print(f"Thinking: {thinking_pause:.1f}s...")
+        # Minimal thinking pause
+        thinking_pause = random.uniform(0.5, 1.5)
+        print(f"🤔 Quick think: {thinking_pause:.1f}s...")
         time.sleep(thinking_pause)
         
         # Send message
-        print("Sending...")
+        print("📤 Sending message...")
         input_element.send_keys(Keys.RETURN)
         
-        # Wait for response
+        # Fast response waiting
         response_text = wait_for_response_complete(driver)
         
         # Display results
-        print(f"\n=== RESPONSE {iteration} ===")
-        if response_text and len(response_text) > 50 and "blocked" not in response_text.lower():
-            print(response_text)
+        print(f"\n📋 RESPONSE {iteration}")
+        if response_text and len(response_text) > 30 and "blocked" not in response_text.lower():
+            print(response_text[:200] + "..." if len(response_text) > 200 else response_text)
             try:
                 pyperclip.copy(response_text)
-                print("\n✓ Copied to clipboard!")
+                print("\n✅ Copied to clipboard!")
             except:
-                print("\n! Could not copy")
+                print("\n⚠️ Could not copy")
         else:
-            print("No valid response")
+            print("❌ No valid response")
             print(f"Got: {response_text[:100]}...")
         print("=" * 50)
         
-        # Minimal closing pause - just enough for response copy
-        time.sleep(1)
-        
     except Exception as e:
-        print(f"Error {iteration}: {e}")
+        print(f"❌ Error {iteration}: {e}")
     
     finally:
         if driver:
             try:
                 print(f"🔄 Closing browser {iteration}...")
                 driver.quit()
-                # Immediate cleanup - no delay
-                print(f"✓ Browser {iteration} closed - ready for next!")
+                print(f"✅ Browser {iteration} closed!")
             except:
-                print(f"! Browser {iteration} cleanup had minor issues")
+                print(f"⚠️ Browser {iteration} cleanup issues")
                 pass
 
 def run_automation():
     """
-    Run ultra-fast automation with immediate browser switching
+    Run ULTRA-SPEED automation with optimized browser switching
     """
-    print("🚀 Starting ULTRA-FAST ChatGPT Automation - 5 iterations")
-    print("🔄 Immediate browser switching for maximum speed!")
+    print("🚀 ULTRA-SPEED ChatGPT Automation - 5 iterations")
+    print("⚡ Maximum speed optimization enabled!")
     
     for i in range(1, 6):
         try:
+            start_time = time.time()
             automated_chatgpt_query(i)
+            end_time = time.time()
             
-            # NO DELAY between iterations - immediate next browser!
+            duration = end_time - start_time
+            print(f"⏱️ Iteration {i} completed in {duration:.1f} seconds")
+            
+            # Minimal delay between iterations for system stability
             if i < 5:
-                print(f"\n⚡ Starting iteration {i+1} immediately...")
-                # Just a tiny 2-second buffer for system cleanup
-                time.sleep(2)
+                print(f"\n⚡ Starting iteration {i+1} in 1 second...")
+                time.sleep(1)  # Just 1 second between iterations
                 
         except KeyboardInterrupt:
             print(f"\n⛔ Stopped at iteration {i}")
             break
         except Exception as e:
             print(f"❌ Error in iteration {i}: {e}")
-            # Even on error, just wait 3 seconds and continue
-            time.sleep(3)
+            # Quick recovery - just 2 seconds wait on error
+            time.sleep(2)
             continue
     
-    print("\n🎉 AUTOMATION COMPLETED!")
+    print("\n🎉 ULTRA-SPEED AUTOMATION COMPLETED!")
+    print("🚀 All iterations finished at maximum speed!")
 
 if __name__ == "__main__":
     run_automation()
