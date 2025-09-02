@@ -7,16 +7,6 @@ import time
 
 app = FastAPI()
 
-# MAXIMUM PARALLELISM - No limits!
-MAX_WORKERS = 500  # Increased to 500 for true parallelism
-executor = concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) import FastAPI
-from pydantic import BaseModel
-from script_instant import get_chatgpt_response
-import asyncio
-import concurrent.futures
-import time
-
-app = FastAPI()
 
 # MAXIMUM PARALLELISM - No limits!
 MAX_WORKERS = 500  # Increased to 500 for true parallelism
