@@ -57,9 +57,14 @@ def get_chatgpt_response(question):
         print("✅ Browser opened")
         driver.get("https://chatgpt.com")
         
-        # Randomized wait to prevent simultaneous requests
-        wait_time = random.uniform(4, 8)
-        time.sleep(wait_time)
+        # Wait for page to be interactive instead of fixed delay
+        wait = WebDriverWait(driver, 10)
+        try:
+            # Wait for any textarea to be present (indicating page loaded)
+            wait.until(EC.presence_of_element_located((By.TAG_NAME, "textarea")))
+        except:
+            # Fallback - minimal wait if element not found immediately
+            time.sleep(1)
         
         # Find input element with better error handling
         input_element = find_input_element(driver, thread_id)
@@ -69,9 +74,9 @@ def get_chatgpt_response(question):
         
         # Send question
         input_element.click()
-        time.sleep(0.5)
+        time.sleep(0.2)  # Reduced from 0.5
         fast_paste_typing(input_element, question)
-        time.sleep(1)
+        time.sleep(0.5)  # Reduced from 1
         input_element.send_keys(Keys.RETURN)
         print("✅ Prompt input successfully")
         
@@ -119,7 +124,7 @@ def find_input_element(driver, thread_id):
             
             # If no element found, wait and try again
             if attempt < max_attempts - 1:
-                wait_time = 3 + attempt * 2
+                wait_time = 1 + attempt  # Reduced from 3 + attempt * 2
                 time.sleep(wait_time)
                 
         except Exception as e:
@@ -204,8 +209,8 @@ def setup_undetected_browser_parallel():
             y_pos = random.randint(0, 300)
             options.add_argument(f"--window-position={x_pos},{y_pos}")
             
-            # Small delay to prevent simultaneous startup
-            startup_delay = random.uniform(0.5, 2.0)
+            # Small delay to prevent simultaneous startup - reduced delay
+            startup_delay = random.uniform(0.1, 0.5)  # Much shorter delay
             time.sleep(startup_delay)
             
             # Create undetected Chrome instance with unique version path
@@ -257,11 +262,11 @@ def fast_paste_typing(element, text):
     try:
         # Copy text to clipboard
         pyperclip.copy(text)
-        time.sleep(0.1)
+        time.sleep(0.05)  # Reduced from 0.1
         
         # Paste the text instantly
         element.send_keys(Keys.CONTROL + 'v')
-        time.sleep(0.2)
+        time.sleep(0.1)  # Reduced from 0.2
         
     except Exception as e:
         # Fallback to optimized typing
@@ -282,8 +287,8 @@ def wait_for_response_complete(driver, thread_id, max_wait=60):
     """
     Optimized response waiting with faster detection for parallel execution
     """
-    # Very short initial wait
-    time.sleep(2)
+    # Very short initial wait - reduced from 2 seconds
+    time.sleep(0.5)
     
     last_response_length = 0
     stable_count = 0
@@ -367,11 +372,15 @@ def automated_chatgpt_query(iteration):
         print("✅ Browser opened")
         driver.get("https://chatgpt.com")
         
-        time.sleep(0)
+        # Wait for page to be interactive instead of fixed delay
+        try:
+            wait = WebDriverWait(driver, 8)
+            wait.until(EC.presence_of_element_located((By.TAG_NAME, "textarea")))
+        except:
+            time.sleep(0.5)  # Minimal fallback
         
-        # Quick page interaction to trigger load completion
-        driver.execute_script("window.scrollTo(0, 50);")
-        time.sleep(0.5)
+        # Quick page ready check
+        driver.execute_script("window.scrollTo(0, 10);")
         
         # Find input box with timeout optimization
         wait = WebDriverWait(driver, 20)
@@ -408,11 +417,11 @@ def automated_chatgpt_query(iteration):
         
         # Ultra-fast interaction
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", input_element)
-        time.sleep(0.3)
+        time.sleep(0.1)  # Reduced from 0.3
         
         # Quick click and focus
         input_element.click()
-        time.sleep(0.2)
+        time.sleep(0.1)  # Reduced from 0.2
         
         # Fast text input using clipboard paste
         question = "what is best laptop to buy in 2024"
