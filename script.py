@@ -449,24 +449,3 @@ def automated_chatgpt_query(iteration):
             except:
                 pass
 
-def run_automation():
-    """
-    Run ULTRA-SPEED automation with optimized browser switching
-    """
-    for i in range(1, 6):
-        try:
-            automated_chatgpt_query(i)
-            
-            # Minimal delay between iterations for system stability
-            if i < 5:
-                time.sleep(1)  # Just 1 second between iterations
-                
-        except KeyboardInterrupt:
-            break
-        except Exception as e:
-            # Quick recovery - just 2 seconds wait on error
-            time.sleep(2)
-            continue
-
-if __name__ == "__main__":
-    run_automation()
