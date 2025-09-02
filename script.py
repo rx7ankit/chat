@@ -259,20 +259,9 @@ def fast_paste_typing(element, text):
         pyperclip.copy(text)
         time.sleep(0.1)
         
-        # Clear the input first
-        element.clear()
-        time.sleep(0.1)
-        
         # Paste the text instantly
         element.send_keys(Keys.CONTROL + 'v')
         time.sleep(0.2)
-        
-        # Add a few natural keystrokes to mask the paste
-        element.send_keys(Keys.END)
-        time.sleep(0.1)
-        element.send_keys(Keys.BACKSPACE)
-        time.sleep(0.1)
-        element.send_keys(text[-1])  # Retype last character
         
     except Exception as e:
         # Fallback to optimized typing
@@ -378,9 +367,7 @@ def automated_chatgpt_query(iteration):
         print("✅ Browser opened")
         driver.get("https://chatgpt.com")
         
-        # Minimal initial wait
-        initial_wait = random.uniform(4, 6)
-        time.sleep(initial_wait)
+        time.sleep(0)
         
         # Quick page interaction to trigger load completion
         driver.execute_script("window.scrollTo(0, 50);")
@@ -432,9 +419,6 @@ def automated_chatgpt_query(iteration):
         print("✅ Prompt received")
         fast_paste_typing(input_element, question)
         
-        # Minimal thinking pause
-        thinking_pause = random.uniform(0.5, 1.5)
-        time.sleep(thinking_pause)
         
         # Send message
         input_element.send_keys(Keys.RETURN)
