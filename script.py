@@ -55,7 +55,7 @@ def create_headless_browser():
             user_data_dir = os.path.join(temp_dir, "user_data")
             os.makedirs(user_data_dir, exist_ok=True)
             
-            # Optimized Chrome options
+            # Optimized Chrome options (compatible with undetected_chromedriver)
             options = uc.ChromeOptions()
             options.add_argument(f"--user-data-dir={user_data_dir}")
             options.add_argument("--no-sandbox")
@@ -67,6 +67,9 @@ def create_headless_browser():
             options.add_argument("--window-size=1920,1080")
             options.add_argument("--disable-web-security")
             options.add_argument("--disable-features=VizDisplayCompositor")
+            options.add_argument("--disable-blink-features=AutomationControlled")
+            options.add_argument("--no-first-run")
+            options.add_argument("--no-default-browser-check")
             
             # User agent
             options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -85,6 +88,9 @@ def create_headless_browser():
             # Set aggressive timeouts for speed
             driver.set_page_load_timeout(45)
             driver.implicitly_wait(8)
+            
+            # Hide automation properties
+            driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
             
             # Store temp dir for cleanup
             if not hasattr(thread_local, 'temp_dirs'):
@@ -279,33 +285,32 @@ def get_chatgpt_response(question):
         # Create browser
         driver = create_headless_browser()
         
-        # Navigate to ChatGPT
+        # SOLUTION: Start by visiting the auth page directly, then navigate to ChatGPT
+        logger.info(f"🌐 Thread {thread_id}: Pre-loading auth page to establish session...")
+        driver.get("https://auth.openai.com")
+        time.sleep(3)
+        logger.info(f"✅ Thread {thread_id}: Auth page session established")
+        
+        # Now navigate directly to ChatGPT - this should avoid the redirect
         logger.info(f"🌐 Thread {thread_id}: Navigating to ChatGPT...")
+        driver.get("https://chatgpt.com")
+        time.sleep(5)  # Give more time for page load
         
-        # Try different URLs to avoid auth redirect
-        urls_to_try = [
-            "https://chatgpt.com/c/new",
-            "https://chatgpt.com/chat",
-            "https://chat.openai.com/"
-        ]
+        current_url = driver.current_url
+        logger.info(f"🔗 Thread {thread_id}: Current URL after navigation: {current_url}")
         
-        for url in urls_to_try:
-            logger.info(f"🔗 Thread {thread_id}: Trying URL: {url}")
-            driver.get(url)
+        # Check if we're still on auth page (should be unlikely now)
+        if "auth.openai.com" in current_url or "login" in current_url.lower():
+            logger.info(f"🔐 Thread {thread_id}: Still on auth page, trying direct chat URL...")
+            driver.get("https://chatgpt.com/chat")
             time.sleep(3)
-            
             current_url = driver.current_url
-            logger.info(f"🔗 Thread {thread_id}: Current URL after navigation: {current_url}")
-            
-            # Check if we're on auth page
-            if "auth.openai.com" in current_url or "login" in current_url.lower():
-                logger.info(f"🔐 Thread {thread_id}: Redirected to auth page, trying next URL...")
-                continue
-            else:
-                logger.info(f"✅ Thread {thread_id}: Successfully accessed ChatGPT without auth redirect")
-                break
+            logger.info(f"🔗 Thread {thread_id}: Direct chat URL result: {current_url}")
+        
+        if "auth.openai.com" not in current_url and "login" not in current_url.lower():
+            logger.info(f"✅ Thread {thread_id}: Successfully accessed ChatGPT without auth redirect")
         else:
-            logger.info(f"⚠️ Thread {thread_id}: All URLs redirected to auth, will try to proceed anyway")
+            logger.info(f"⚠️ Thread {thread_id}: Still on auth page, will try to proceed anyway")
         
         # Wait for page load (same as working debug script)
         time.sleep(10)
