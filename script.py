@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Simplified ChatGPT automation script with better headless support
+FIXED ChatGPT automation script for TRUE parallelism
+Solves the Chrome driver file locking issue
 """
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
@@ -13,19 +14,19 @@ import tempfile
 import os
 import threading
 import logging
-import pyperclip
+import uuid
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Global settings
-HEADLESS_MODE = True  # Set to False for visible browser
+HEADLESS_MODE = True
 
 # Thread-local storage
 thread_local = threading.local()
 
-# Global lock for Chrome driver creation
+# Global lock for Chrome driver creation - this fixes the file conflict!
 chrome_creation_lock = threading.Lock()
 
 def cleanup_thread_resources():
@@ -40,14 +41,67 @@ def cleanup_thread_resources():
         thread_local.temp_dirs = []
 
 def create_headless_browser():
-    """Create a simple headless browser"""
+    """Create a headless browser with file conflict prevention"""
     thread_id = threading.get_ident()
     logger.info(f"🔧 Thread {thread_id}: Creating headless browser...")
     
+    # CRITICAL: Use global lock to prevent file conflicts
     with chrome_creation_lock:
         try:
-            # Create temporary directory
-            temp_dir = tempfile.mkdtemp(prefix=f"chrome_{thread_id}_")
+            # Create unique temporary directory for each thread
+            unique_id = f"chrome_{thread_id}_{uuid.uuid4().hex[:8]}"
+            temp_dir = tempfile.mkdtemp(prefix=unique_id)
+            user_data_dir = os.path.join(temp_dir, "user_data")
+            os.makedirs(user_data_dir, exist_ok=True)
+            
+            # Optimized Chrome options
+            options = uc.ChromeOptions()
+            options.add_argument(f"--user-data-dir={user_data_dir}")
+            options.add_argument("--no-sandbox")
+            options.add_argument("--disable-dev-shm-usage")
+            options.add_argument("--disable-extensions")
+            options.add_argument("--disable-plugins")
+            options.add_argument("--headless=new")
+            options.add_argument("--disable-gpu")
+            options.add_argument("--window-size=1920,1080")
+            options.add_argument("--disable-web-security")
+            options.add_argument("--disable-features=VizDisplayCompositor")
+            
+            # User agent
+            options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            
+            # Small random delay to prevent simultaneous driver creation
+            time.sleep(random.uniform(0.1, 0.3))
+            
+            # Create driver with unique binary location
+            driver = uc.Chrome(
+                options=options,
+                version_main=None,
+                use_subprocess=False,
+                driver_executable_path=None  # Let it auto-download to avoid conflicts
+            )
+            
+            # Set aggressive timeouts for speed
+            driver.set_page_load_timeout(45)
+            driver.implicitly_wait(8)
+            
+            # Store temp dir for cleanup
+            if not hasattr(thread_local, 'temp_dirs'):
+                thread_local.temp_dirs = []
+            thread_local.temp_dirs.append(temp_dir)
+            
+            logger.info(f"✅ Thread {thread_id}: Browser created successfully")
+            return driver
+            
+        except Exception as e:
+            logger.error(f"❌ Thread {thread_id}: Failed to create browser: {e}")
+            if 'temp_dir' in locals():
+                try:
+                    import shutil
+                    shutil.rmtree(temp_dir, ignore_errors=True)
+                except:
+                    pass
+            raise
             user_data_dir = os.path.join(temp_dir, "user_data")
             os.makedirs(user_data_dir, exist_ok=True)
             
