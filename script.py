@@ -75,7 +75,7 @@ def create_headless_browser():
             options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
             
             # Small random delay to prevent simultaneous driver creation
-            time.sleep(random.uniform(0.1, 0.3))
+            time.sleep(random.uniform(0.05, 0.15))  # Reduced from 0.1-0.3
             
             # Create driver with unique binary location
             driver = uc.Chrome(
@@ -85,9 +85,9 @@ def create_headless_browser():
                 driver_executable_path=None  # Let it auto-download to avoid conflicts
             )
             
-            # Set aggressive timeouts for speed
-            driver.set_page_load_timeout(45)
-            driver.implicitly_wait(8)
+            # Set faster timeouts for speed
+            driver.set_page_load_timeout(25)  # Reduced from 45
+            driver.implicitly_wait(5)  # Reduced from 8
             
             # Hide automation properties
             driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
@@ -285,126 +285,37 @@ def get_chatgpt_response(question):
         # Create browser
         driver = create_headless_browser()
         
-        # SOLUTION: Start by visiting the auth page directly, then navigate to ChatGPT
-        logger.info(f"🌐 Thread {thread_id}: Pre-loading auth page to establish session...")
+        # OPTIMIZED: Direct auth page visit with minimal wait times
+        logger.info(f"🌐 Thread {thread_id}: Pre-loading auth page...")
         driver.get("https://auth.openai.com")
-        time.sleep(3)
-        logger.info(f"✅ Thread {thread_id}: Auth page session established")
+        time.sleep(1.5)  # Reduced from 3s
         
-        # Now navigate directly to ChatGPT - this should avoid the redirect
+        # Navigate directly to ChatGPT with minimal wait
         logger.info(f"🌐 Thread {thread_id}: Navigating to ChatGPT...")
         driver.get("https://chatgpt.com")
-        time.sleep(5)  # Give more time for page load
+        time.sleep(2)  # Reduced from 5s
         
         current_url = driver.current_url
-        logger.info(f"🔗 Thread {thread_id}: Current URL after navigation: {current_url}")
-        
-        # Check if we're still on auth page (should be unlikely now)
-        if "auth.openai.com" in current_url or "login" in current_url.lower():
-            logger.info(f"🔐 Thread {thread_id}: Still on auth page, trying direct chat URL...")
-            driver.get("https://chatgpt.com/chat")
-            time.sleep(3)
-            current_url = driver.current_url
-            logger.info(f"🔗 Thread {thread_id}: Direct chat URL result: {current_url}")
-        
-        if "auth.openai.com" not in current_url and "login" not in current_url.lower():
-            logger.info(f"✅ Thread {thread_id}: Successfully accessed ChatGPT without auth redirect")
-        else:
-            logger.info(f"⚠️ Thread {thread_id}: Still on auth page, will try to proceed anyway")
-        
-        # Wait for page load (same as working debug script)
-        time.sleep(10)
-        
-        # Scrape and analyze the page content
-        logger.info(f"🔍 Thread {thread_id}: Scraping page content for analysis...")
-        
-        # Get page title and URL
-        title = driver.title
-        current_url = driver.current_url
-        logger.info(f"📄 Thread {thread_id}: Page title: {title}")
         logger.info(f"🔗 Thread {thread_id}: Current URL: {current_url}")
         
-        # Get all input elements
-        inputs = driver.find_elements(By.TAG_NAME, "input")
-        logger.info(f"📝 Thread {thread_id}: Found {len(inputs)} input elements")
-        for i, inp in enumerate(inputs[:10]):  # Show first 10
-            try:
-                inp_type = inp.get_attribute("type") or "text"
-                inp_placeholder = inp.get_attribute("placeholder") or ""
-                inp_id = inp.get_attribute("id") or ""
-                inp_class = inp.get_attribute("class") or ""
-                logger.info(f"  Input {i}: type='{inp_type}', placeholder='{inp_placeholder}', id='{inp_id}', class='{inp_class[:50]}'")
-            except Exception as e:
-                logger.error(f"  Error reading input {i}: {e}")
+        # Quick fallback if needed
+        if "auth.openai.com" in current_url:
+            logger.info(f"🔐 Thread {thread_id}: Trying direct chat URL...")
+            driver.get("https://chatgpt.com/chat")
+            time.sleep(1.5)  # Reduced from 3s
+            current_url = driver.current_url
         
-        # Get all textarea elements
-        textareas = driver.find_elements(By.TAG_NAME, "textarea")
-        logger.info(f"📝 Thread {thread_id}: Found {len(textareas)} textarea elements")
-        for i, ta in enumerate(textareas[:5]):  # Show first 5
-            try:
-                ta_placeholder = ta.get_attribute("placeholder") or ""
-                ta_id = ta.get_attribute("id") or ""
-                ta_class = ta.get_attribute("class") or ""
-                logger.info(f"  Textarea {i}: placeholder='{ta_placeholder}', id='{ta_id}', class='{ta_class[:50]}'")
-            except Exception as e:
-                logger.error(f"  Error reading textarea {i}: {e}")
+        logger.info(f"✅ Thread {thread_id}: ChatGPT loaded")
         
-        # Get all buttons
-        buttons = driver.find_elements(By.TAG_NAME, "button")
-        logger.info(f"🔘 Thread {thread_id}: Found {len(buttons)} button elements")
-        for i, btn in enumerate(buttons[:10]):  # Show first 10
-            try:
-                btn_text = btn.text[:30] if btn.text else ""
-                btn_class = btn.get_attribute("class") or ""
-                logger.info(f"  Button {i}: text='{btn_text}', class='{btn_class[:50]}'")
-            except Exception as e:
-                logger.error(f"  Error reading button {i}: {e}")
+        # OPTIMIZED: Quick element detection (no extensive scraping)
+        logger.info(f"� Thread {thread_id}: Finding input element...")
         
-        # Check for login/signup elements
-        login_elements = driver.find_elements(By.XPATH, "//*[contains(text(), 'Log in') or contains(text(), 'Sign up') or contains(text(), 'Continue') or contains(text(), 'Get started')]")
-        logger.info(f"🔐 Thread {thread_id}: Found {len(login_elements)} login-related elements")
-        for i, elem in enumerate(login_elements[:5]):
-            try:
-                elem_text = elem.text[:50] if elem.text else ""
-                elem_tag = elem.tag_name
-                logger.info(f"  Login element {i}: tag='{elem_tag}', text='{elem_text}'")
-            except Exception as e:
-                logger.error(f"  Error reading login element {i}: {e}")
-        
-        # Check for specific keywords in page source
-        page_source = driver.page_source
-        logger.info(f"📄 Thread {thread_id}: Page source length: {len(page_source)} characters")
-        
-        keywords = ["chat", "message", "send", "login", "continue", "textarea", "input", "prompt"]
-        for keyword in keywords:
-            count = page_source.lower().count(keyword)
-            if count > 0:
-                logger.info(f"🔍 Thread {thread_id}: Found '{keyword}' {count} times in page source")
-        
-        # Look for div elements with contenteditable
-        contenteditable_divs = driver.find_elements(By.XPATH, "//div[@contenteditable='true']")
-        logger.info(f"📝 Thread {thread_id}: Found {len(contenteditable_divs)} contenteditable div elements")
-        for i, div in enumerate(contenteditable_divs[:5]):
-            try:
-                div_class = div.get_attribute("class") or ""
-                div_id = div.get_attribute("id") or ""
-                div_data_id = div.get_attribute("data-id") or ""
-                logger.info(f"  ContentEditable {i}: class='{div_class[:50]}', id='{div_id}', data-id='{div_data_id}'")
-            except Exception as e:
-                logger.error(f"  Error reading contenteditable {i}: {e}")
-        
-        # Continue to actual message sending instead of returning early
-        logger.info(f"🔍 Thread {thread_id}: Scraping complete - proceeding to send message")
-        
-        # Find input element - Updated selectors based on scraping analysis
+        # Fast input detection with proven selectors
         input_selectors = [
-            '#prompt-textarea',  # Main contenteditable div found in scraping
-            'div.ProseMirror',   # ProseMirror editor class
-            'textarea[placeholder*="Ask anything"]',  # Fallback textarea with correct placeholder
-            'div[contenteditable="true"]',  # Generic contenteditable
-            'textarea[data-id="root"]',  # Previous selector
-            'textarea[placeholder*="Message"]',  # Generic message input
-            'textarea'  # Final fallback
+            '#prompt-textarea',  # Main target
+            'div.ProseMirror',   # ProseMirror editor
+            'textarea[placeholder*="Ask anything"]',  # Fallback
+            'div[contenteditable="true"]'  # Generic contenteditable
         ]
         
         found_input = None
@@ -414,7 +325,7 @@ def get_chatgpt_response(question):
                 for element in elements:
                     if element.is_displayed() and element.is_enabled():
                         found_input = element
-                        logger.info(f"✅ Thread {thread_id}: Found input with {selector}")
+                        logger.info(f"✅ Thread {thread_id}: Found input element")
                         break
                 if found_input:
                     break
@@ -422,59 +333,59 @@ def get_chatgpt_response(question):
                 continue
         
         if not found_input:
-            # Debug: Get page source snippet for troubleshooting
-            try:
-                page_source = driver.page_source
-                logger.error(f"Thread {thread_id}: Page title: {driver.title}")
-                logger.error(f"Thread {thread_id}: URL: {driver.current_url}")
-                # Look for any textarea or input elements
-                textareas = driver.find_elements(By.TAG_NAME, "textarea")
-                inputs = driver.find_elements(By.TAG_NAME, "input")
-                contenteditable = driver.find_elements(By.CSS_SELECTOR, "[contenteditable]")
-                logger.error(f"Thread {thread_id}: Found {len(textareas)} textareas, {len(inputs)} inputs, {len(contenteditable)} contenteditable")
-            except Exception as debug_e:
-                logger.error(f"Thread {thread_id}: Debug error: {debug_e}")
-            
+            logger.error(f"❌ Thread {thread_id}: No input element found")
             return f"Thread {thread_id}: No input element found"
         
-        # Send message (exactly like working version)
+        # OPTIMIZED: Fast message sending
         logger.info(f"📝 Thread {thread_id}: Sending message...")
         found_input.click()
-        time.sleep(0.5)
+        time.sleep(0.2)  # Reduced from 0.5s
         found_input.clear()
         found_input.send_keys(question)
-        time.sleep(1)
+        time.sleep(0.5)  # Reduced from 1s
         found_input.send_keys(Keys.RETURN)
         logger.info(f"✅ Thread {thread_id}: Message sent")
         
-        # Wait for response (exactly like working debug script)
+        # OPTIMIZED: Faster response detection
         logger.info(f"⏳ Thread {thread_id}: Waiting for response...")
-        time.sleep(10)  # Same wait time as successful debug script
         
-        # Look for response - Updated selectors for markdown content
+        # Reduced wait time and check more frequently
+        max_wait = 15  # Reduced from longer waits
+        check_interval = 1
+        waited = 0
+        
+        while waited < max_wait:
+            time.sleep(check_interval)
+            waited += check_interval
+            
+            # Quick response check with primary selector
+            try:
+                elements = driver.find_elements(By.CSS_SELECTOR, 'div[data-message-author-role="assistant"] .markdown')
+                if elements:
+                    response_text = elements[-1].text.strip()
+                    if response_text and len(response_text) > 10:  # Ensure substantial response
+                        logger.info(f"✅ Thread {thread_id}: Response found in {waited}s: {response_text[:100]}...")
+                        return response_text
+            except:
+                pass
+        
+        # Fallback: try other selectors if primary didn't work
         response_selectors = [
-            'div[data-message-author-role="assistant"] .markdown',  # Assistant message with markdown
-            'div[data-message-author-role="assistant"]',  # Assistant message container
-            '[data-message-author-role="assistant"]',  # Any element with assistant role
-            '.markdown',  # Direct markdown class
-            '.prose',  # Prose styling class
-            'div[class*="markdown"]',  # Any div with markdown in class name
-            'div[class*="prose"]',  # Any div with prose in class name
-            'article',  # Article elements (sometimes used for responses)
-            'div[data-testid*="conversation-turn"]'  # Conversation turn elements
+            'div[data-message-author-role="assistant"]',
+            '[data-message-author-role="assistant"]',
+            '.markdown',
+            '.prose'
         ]
         
         for selector in response_selectors:
             try:
                 elements = driver.find_elements(By.CSS_SELECTOR, selector)
-                logger.info(f"Thread {thread_id}: Selector '{selector}' found {len(elements)} elements")
                 if elements:
                     response_text = elements[-1].text.strip()
-                    if response_text and len(response_text) > 5:
-                        logger.info(f"✅ Thread {thread_id}: Found response with {selector}: {response_text[:100]}...")
+                    if response_text and len(response_text) > 10:
+                        logger.info(f"✅ Thread {thread_id}: Response found with fallback: {response_text[:100]}...")
                         return response_text
-            except Exception as e:
-                logger.warning(f"Thread {thread_id}: Error with selector '{selector}': {e}")
+            except:
                 continue
         
         return f"Thread {thread_id}: No response found"
