@@ -1,10 +1,3 @@
-"""
-PURE PARALLELISM TEST
-====================
-This script does ONE thing: test true 100% parallelism.
-All 104 requests should complete in ~20-30 seconds if truly parallel.
-"""
-
 import json
 import asyncio
 import aiohttp
