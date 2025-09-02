@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from script import get_chatgpt_response
+from script_simple import get_chatgpt_response
 import asyncio
 import concurrent.futures
 import time
